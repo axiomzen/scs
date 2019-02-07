@@ -33,6 +33,32 @@ func TestGenerateToken(t *testing.T) {
 	}
 }
 
+func TestGenerateTokenWithPrefix(t *testing.T) {
+	prefix := "prefix"
+	fullToken, err := generateTokenWithPrefix(prefix)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	splitToken := strings.Split(fullToken, PrefixTokenDelimiter)
+	if len(splitToken) != 2 {
+		t.Errorf("Split token should have a length of 2, got %q", len(splitToken))
+	}
+
+	tokenPrefix, token := splitToken[0], splitToken[1]
+	match, err := regexp.MatchString("^[0-9a-zA-Z_\\-]{43}$", token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if match == false {
+		t.Errorf("token got %q: should match %q", token, "^[0-9a-zA-Z_\\-]{43}$")
+	}
+
+	if tokenPrefix != prefix {
+		t.Errorf("prefix got %q: should match %q", tokenPrefix, prefix)
+	}
+}
+
 func TestString(t *testing.T) {
 	manager := NewManager(newMockStore())
 

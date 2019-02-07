@@ -23,15 +23,20 @@ type sessionName string
 // received value could not be type asserted or converted into the required type.
 var ErrTypeAssertionFailed = errors.New("type assertion failed")
 
+// PrefixTokenDelimiter used to add a delimiter between the prefix and the randomly
+// generated token.
+const PrefixTokenDelimiter = "$"
+
 // Session contains data for the current session.
 type Session struct {
-	token    string
-	data     map[string]interface{}
-	deadline time.Time
-	store    Store
-	opts     *options
-	loadErr  error
-	mu       sync.Mutex
+	token       string
+	data        map[string]interface{}
+	deadline    time.Time
+	store       Store
+	opts        *options
+	loadErr     error
+	mu          sync.Mutex
+	tokenPrefix string
 }
 
 // cookie wraps http.Cookie, adding SameSite support
@@ -48,16 +53,17 @@ func (c *cookie) String() string {
 	return v
 }
 
-func newSession(store Store, opts *options) *Session {
+func newSession(store Store, opts *options, tokenPrefix string) *Session {
 	return &Session{
-		data:     make(map[string]interface{}),
-		deadline: time.Now().Add(opts.lifetime),
-		store:    store,
-		opts:     opts,
+		data:        make(map[string]interface{}),
+		deadline:    time.Now().Add(opts.lifetime),
+		store:       store,
+		opts:        opts,
+		tokenPrefix: tokenPrefix,
 	}
 }
 
-func load(r *http.Request, store Store, opts *options) *Session {
+func load(r *http.Request, store Store, opts *options, tokenPrefix string) *Session {
 	// Check to see if there is an already loaded session in the request context.
 	val := r.Context().Value(sessionName(opts.name))
 	if val != nil {
@@ -70,13 +76,13 @@ func load(r *http.Request, store Store, opts *options) *Session {
 
 	cookie, err := r.Cookie(opts.name)
 	if err == http.ErrNoCookie {
-		return newSession(store, opts)
+		return newSession(store, opts, tokenPrefix)
 	} else if err != nil {
 		return &Session{loadErr: err}
 	}
 
 	if cookie.Value == "" {
-		return newSession(store, opts)
+		return newSession(store, opts, tokenPrefix)
 	}
 	token := cookie.Value
 
@@ -85,7 +91,7 @@ func load(r *http.Request, store Store, opts *options) *Session {
 		return &Session{loadErr: err}
 	}
 	if found == false {
-		return newSession(store, opts)
+		return newSession(store, opts, tokenPrefix)
 	}
 
 	data, deadline, err := decodeFromJSON(j)
@@ -94,11 +100,12 @@ func load(r *http.Request, store Store, opts *options) *Session {
 	}
 
 	s := &Session{
-		token:    token,
-		data:     data,
-		deadline: deadline,
-		store:    store,
-		opts:     opts,
+		token:       token,
+		data:        data,
+		deadline:    deadline,
+		store:       store,
+		opts:        opts,
+		tokenPrefix: tokenPrefix,
 	}
 
 	return s
@@ -128,7 +135,7 @@ func (s *Session) write(w http.ResponseWriter) error {
 		}
 	} else {
 		if s.token == "" {
-			s.token, err = generateToken()
+			s.token, err = s.generateToken()
 			if err != nil {
 				return err
 			}
@@ -688,7 +695,7 @@ func (s *Session) RenewToken(w http.ResponseWriter) error {
 		return err
 	}
 
-	token, err := generateToken()
+	token, err := s.generateToken()
 	if err != nil {
 		s.mu.Unlock()
 		return err
@@ -755,6 +762,13 @@ func (s *Session) Touch(w http.ResponseWriter) error {
 	return nil
 }
 
+// SetTokenPrefix is used to add a prefix to the token generation function
+// when prefix is set the tokens will be generated as follows:
+// {prefix}{PrefixDelimiter}{32 byte base64 encoded string}
+func (s *Session) SetTokenPrefix(prefix string) {
+	s.tokenPrefix = prefix
+}
+
 func (s *Session) get(key string) (interface{}, bool, error) {
 	if s.loadErr != nil {
 		return nil, false, s.loadErr
@@ -801,6 +815,22 @@ func (s *Session) pop(w http.ResponseWriter, key string) (interface{}, bool, err
 	}
 
 	return v, true, nil
+}
+
+func (s *Session) generateToken() (string, error) {
+	if s.tokenPrefix != "" {
+		return generateTokenWithPrefix(s.tokenPrefix)
+	}
+	return generateToken()
+}
+
+func generateTokenWithPrefix(prefix string) (string, error) {
+	token, err := generateToken()
+	if err != nil {
+		return "", nil
+	}
+
+	return prefix + PrefixTokenDelimiter + token, nil
 }
 
 func generateToken() (string, error) {

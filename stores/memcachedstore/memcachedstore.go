@@ -1,6 +1,7 @@
 package memcachedstore
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/bradfitz/gomemcache/memcache"
@@ -48,6 +49,11 @@ func (m *MemcachedStore) Save(token string, b []byte, expiry time.Time) error {
 // Delete removes a session token and corresponding data from the MemcachedStore instance.
 func (m *MemcachedStore) Delete(token string) error {
 	return m.client.Delete(Prefix + token)
+}
+
+// DeleteByPattern removes all tokens that match the pattern from the MemcachedStore instance
+func (m *MemcachedStore) DeleteByPattern(pattern string) error {
+	return fmt.Errorf("Store: Not implemented")
 }
 
 // createOffset calculates how expiration dates should be stored

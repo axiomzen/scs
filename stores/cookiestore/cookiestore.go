@@ -82,6 +82,12 @@ func (c *CookieStore) Delete(token string) error {
 	return nil
 }
 
+// DeleteByPattern is a no-op. The function exists only to ensure that a CookieStore instance
+// satisfies the scs.Store interface.
+func (c *CookieStore) DeleteByPattern(pattern string) error {
+	return nil
+}
+
 func encodeToken(key [32]byte, b []byte, expiry time.Time) (string, error) {
 	expiryTimestamp := []byte(strconv.FormatInt(expiry.UnixNano(), 10))
 	if len(expiryTimestamp) != 19 {

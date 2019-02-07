@@ -223,3 +223,59 @@ func TestDelete(t *testing.T) {
 		t.Fatalf("got %v: expected %v", data, nil)
 	}
 }
+
+func TestDeleteByPattern(t *testing.T) {
+	redisPool := redis.NewPool(func() (redis.Conn, error) {
+		addr := os.Getenv("SESSION_REDIS_TEST_ADDR")
+		conn, err := redis.Dial("tcp", addr)
+		if err != nil {
+			return nil, err
+		}
+		return conn, err
+	}, 1)
+	defer redisPool.Close()
+
+	conn := redisPool.Get()
+	defer conn.Close()
+	_, err := conn.Do("FLUSHDB")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// token 1
+	firstToken := "session_token_1"
+	_, err = conn.Do("SET", Prefix+firstToken, "encoded_data")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// token 2
+	secondToken := "session_token_2"
+	_, err = conn.Do("SET", Prefix+secondToken, "encoded_data")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := New(redisPool)
+
+	err = r.DeleteByPattern("session_token_")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := redis.MultiBulk(conn.Do("MGET", Prefix+firstToken, Prefix+secondToken))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(data) != 2 {
+		t.Fatalf("len(data) %v: expected %v", len(data), 2)
+	}
+
+	if data[0] != nil {
+		t.Fatalf("data[0] got %v: expected %v", data, nil)
+	}
+
+	if data[1] != nil {
+		t.Fatalf("data[1] got %v: expected %v", data, nil)
+	}
+}

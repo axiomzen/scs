@@ -17,6 +17,7 @@ package mysqlstore
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -88,6 +89,11 @@ func (m *MySQLStore) Save(token string, b []byte, expiry time.Time) error {
 func (m *MySQLStore) Delete(token string) error {
 	_, err := m.DB.Exec("DELETE FROM sessions WHERE token = ?", token)
 	return err
+}
+
+// DeleteByPattern removes all tokens that match the pattern from the MySQLStore instance
+func (m *MySQLStore) DeleteByPattern(pattern string) error {
+	return fmt.Errorf("Store: Not implemented")
 }
 
 func (m *MySQLStore) startCleanup(interval time.Duration) {

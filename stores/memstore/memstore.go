@@ -15,6 +15,7 @@ package memstore
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -65,5 +66,15 @@ func (m *MemStore) Save(token string, b []byte, expiry time.Time) error {
 // Delete removes a session token and corresponding data from the MemStore instance.
 func (m *MemStore) Delete(token string) error {
 	m.cache.Delete(token)
+	return nil
+}
+
+// DeleteByPattern removes all tokens that match the pattern from the MemStore instance
+func (m *MemStore) DeleteByPattern(pattern string) error {
+	for key := range m.cache.Items() {
+		if strings.Contains(key, pattern) {
+			m.cache.Delete(key)
+		}
+	}
 	return nil
 }

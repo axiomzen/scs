@@ -124,3 +124,27 @@ func TestDelete(t *testing.T) {
 		t.Fatalf("got %v: expected %v", found, false)
 	}
 }
+
+func TestDeleteByPattern(t *testing.T) {
+	m := New(time.Minute)
+
+	firstToken := "session_token_1"
+	secondToken := "session_token_2"
+	m.cache.Set(firstToken, []byte("encoded_data"), 0)
+	m.cache.Set(secondToken, []byte("encoded_data"), 0)
+
+	err := m.DeleteByPattern("session_token_")
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
+	}
+
+	_, found := m.cache.Get(firstToken)
+	if found != false {
+		t.Fatalf("got %v: expected %v", found, false)
+	}
+
+	_, found = m.cache.Get(secondToken)
+	if found != false {
+		t.Fatalf("got %v: expected %v", found, false)
+	}
+}

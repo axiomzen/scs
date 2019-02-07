@@ -5,6 +5,7 @@
 package dynamostore
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -125,6 +126,11 @@ func (d *DynamoStore) Delete(token string) error {
 
 	_, err := d.DB.DeleteItem(params)
 	return err
+}
+
+// DeleteByPattern removes all tokens that match the pattern from the DynamoStore instance
+func (d *DynamoStore) DeleteByPattern(pattern string) error {
+	return fmt.Errorf("Store: Not implemented")
 }
 
 // Ping checks to exisit session table in DynamoDB.

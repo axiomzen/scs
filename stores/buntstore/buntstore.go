@@ -2,6 +2,7 @@
 package buntstore
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/tidwall/buntdb"
@@ -53,4 +54,9 @@ func (bs *BuntStore) Delete(token string) error {
 		_, err := tx.Delete(token)
 		return err
 	})
+}
+
+// DeleteByPattern removes all tokens that match the pattern from the BuntStore instance
+func (bs *BuntStore) DeleteByPattern(pattern string) error {
+	return fmt.Errorf("Store: Not implemented")
 }

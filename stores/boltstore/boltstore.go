@@ -2,6 +2,7 @@
 package boltstore
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -96,6 +97,11 @@ func (bs *BoltStore) Delete(token string) error {
 		tokenBytes := []byte(token)
 		return txDelete(tx, tokenBytes)
 	})
+}
+
+// DeleteByPattern removes all tokens that match the pattern from the BoltStore instance
+func (bs *BoltStore) DeleteByPattern(pattern string) error {
+	return fmt.Errorf("Store: Not implemented")
 }
 
 // startCleanup is a helper func to periodically call deleteExpired.

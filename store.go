@@ -9,6 +9,11 @@ type Store interface {
 	// and return nil (not an error).
 	Delete(token string) (err error)
 
+	// DeleteByPattern will delete all keys that match the provided pattern. If the
+	// pattern doesn't match any keys then DeleteByPattern will no-op and return nil
+	// (not an error).
+	DeleteByPattern(pattern string) (err error)
+
 	// Find should return the data for a session token from the session store.
 	// If the session token is not found or is expired, the found return value
 	// should be false (and the err return value should be nil). Similarly, tampered

@@ -17,6 +17,7 @@ package pgstore
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 
@@ -88,6 +89,11 @@ func (p *PGStore) startCleanup(interval time.Duration) {
 			return
 		}
 	}
+}
+
+// DeleteByPattern removes all tokens that match the pattern from the PGStore instance
+func (p *PGStore) DeleteByPattern(pattern string) error {
+	return fmt.Errorf("Store: Not implemented")
 }
 
 // StopCleanup terminates the background cleanup goroutine for the PGStore instance.

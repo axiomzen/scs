@@ -750,6 +750,51 @@ func (s *Session) Destroy(w http.ResponseWriter) error {
 	return nil
 }
 
+// DestroyUsingTokenPrefix deletes all token from storage that matches
+// the token prefix. NOTE: this function will also delete current
+// session if the token matches the tokenPrefix
+func (s *Session) DestroyUsingTokenPrefix(w http.ResponseWriter) error {
+	if s.loadErr != nil {
+		return s.loadErr
+	}
+
+	if s.tokenPrefix == "" {
+		return fmt.Errorf("tokenPrefix is not set. You can call session.SetTokenPrefix(..) to set token prefix")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	pattern := s.tokenPrefix + PrefixTokenDelimiter
+	err := s.store.DeleteByPattern(pattern)
+	if err != nil {
+		return err
+	}
+
+	// Used to prevent the case were the token was deleted from storage,
+	// but is still inside the cookie.
+	if strings.Contains(s.token, pattern) {
+		s.token = ""
+		for key := range s.data {
+			delete(s.data, key)
+		}
+
+		cookie := &http.Cookie{
+			Name:     s.opts.name,
+			Value:    "",
+			Path:     s.opts.path,
+			Domain:   s.opts.domain,
+			Secure:   s.opts.secure,
+			HttpOnly: s.opts.httpOnly,
+			Expires:  time.Unix(1, 0),
+			MaxAge:   -1,
+		}
+		http.SetCookie(w, cookie)
+	}
+
+	return nil
+}
+
 // Touch writes the session data in order to update the expiry time when an
 // Idle Timeout has been set. If IdleTimeout is not > 0, then Touch is a no-op.
 func (s *Session) Touch(w http.ResponseWriter) error {

@@ -17,6 +17,7 @@ package qlstore
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 
@@ -64,6 +65,11 @@ func (q *QLStore) startCleanup(interval time.Duration) {
 func (q *QLStore) Delete(token string) error {
 	_, err := execTx(q.DB, "DELETE FROM sessions where token=$1", token)
 	return err
+}
+
+// DeleteByPattern removes all tokens that match the pattern from the QLStore instance
+func (q *QLStore) DeleteByPattern(pattern string) error {
+	return fmt.Errorf("Store: Not implemented")
 }
 
 func (q *QLStore) deleteExpired() error {

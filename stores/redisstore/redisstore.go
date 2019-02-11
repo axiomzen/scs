@@ -67,13 +67,51 @@ func (r *RedisStore) Save(token string, b []byte, expiry time.Time) error {
 	return err
 }
 
-// Delete removes a session token and corresponding data from the ResisStore instance.
+// Delete removes a session token and corresponding data from the RedisStore instance.
 func (r *RedisStore) Delete(token string) error {
 	conn := r.pool.Get()
 	defer conn.Close()
 
 	_, err := conn.Do("DEL", Prefix+token)
 	return err
+}
+
+// DeleteByPattern removes all tokens that match the pattern from the RedisStore instance
+func (r *RedisStore) DeleteByPattern(pattern string) error {
+	conn := r.pool.Get()
+	defer conn.Close()
+
+	matchPattern := Prefix + pattern + "*"
+
+	itr := 0
+	var keys []string
+
+	for {
+		// we scan with our itr offset, starting at 0
+		arr, err := redis.MultiBulk(conn.Do("SCAN", itr, "MATCH", matchPattern))
+		if err != nil {
+			return err
+		}
+
+		// fetch itr and keys from the multi-bulk reply
+		itr, _ = redis.Int(arr[0], nil)
+		keys, _ = redis.Strings(arr[1], nil)
+
+		// when SCAN returns a 0 when it is complete
+		if itr == 0 {
+			break
+		}
+	}
+
+	// Unlink all the found keys. Unlink is more efficient than DEL
+	// see: https://redis.io/commands/unlink
+	for _, key := range keys {
+		_, err := conn.Do("UNLINK", key)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func makeMillisecondTimestamp(t time.Time) int64 {

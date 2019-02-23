@@ -164,12 +164,14 @@ func (s *Session) write(w http.ResponseWriter) error {
 	}
 
 	// Overwrite any existing cookie header for the session...
+	// It is possible that there are multiple sessions with the same
+	// s.opts.name. This case typically happens when we Delete a session
+	// and then create another session in the same request.
 	var set bool
 	for i, h := range w.Header()["Set-Cookie"] {
 		if strings.HasPrefix(h, fmt.Sprintf("%s=", s.opts.name)) {
 			w.Header()["Set-Cookie"][i] = cookie.String()
 			set = true
-			break
 		}
 	}
 	// Or set a new one if necessary.

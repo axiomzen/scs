@@ -96,7 +96,7 @@ func (r *RedisStore) DeleteByPattern(pattern string) error {
 		// fetch itr and keys from the multi-bulk reply
 		itr, _ = redis.Int(arr[0], nil)
 
-		// get all the keys from this round an then append them
+		// get all the keys from this round and append them
 		// to the final list containing keys from all rounds
 		roundKeys, _ := redis.Strings(arr[1], nil)
 		keys = append(keys, roundKeys...)
